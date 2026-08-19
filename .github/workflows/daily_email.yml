@@ -1,0 +1,31 @@
+name: Daily Subscription Email Alert
+
+on:
+  schedule:
+    # 매일 한국 시간 오전 9시 (UTC 00:00) 자동 실행
+    - cron: '0 0 * * *'
+  workflow_dispatch: # 수동으로 즉시 테스트 실행할 수 있는 버튼 활성화
+
+jobs:
+  check-and-send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          pip install requests
+
+      - name: Run Alert Script
+        env:
+          SERVICE_KEY: ${{ secrets.SERVICE_KEY }}
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_RECEIVER: ${{ secrets.EMAIL_RECEIVER }}
+        run: python send_email.py
