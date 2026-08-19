@@ -56,7 +56,7 @@ def load_data():
                 rnk2_etc = item.get("GNRL_RNK2_ETC_GG_RCEPT_PD", "")
                 rnk2_date = rnk2_crtr or rnk2_etc or "-"
 
-                # 접수 상태 판별 (시작일, 마감일 기준)
+                # 접수 상태 판별
                 rcept_bgnde = item.get("RCEPT_BGNDE", "")
                 rcept_endde = item.get("RCEPT_ENDDE", "")
                 
@@ -66,6 +66,9 @@ def load_data():
                     status = "접수예정"
                 else:
                     status = "접수중"
+
+                # 당첨자 발표일 (청약홈 정확한 필드명: PRZWNER_PRESNATN_DE)
+                winner_date = item.get("PRZWNER_PRESNATN_DE") or item.get("PRZWLR_ANNC_DE") or "-"
 
                 cleaned.append({
                     "단지명": item.get("HOUSE_NM"),
@@ -77,7 +80,7 @@ def load_data():
                     "2순위": rnk2_date,
                     "접수시작일": rcept_bgnde,
                     "접수종료일": rcept_endde,
-                    "당첨자발표": item.get("PRZWLR_ANNC_DE", "-"),
+                    "당첨자발표": winner_date,
                     "모집공고일": item.get("RCRIT_PBLANC_DE", "-"),
                     "링크": item.get("PBLANC_URL"),
                     "세대원가능여부": is_member_eligible,
@@ -111,15 +114,11 @@ def render_apt_card(row, is_recommend=False):
             else:
                 eligibility = "**:green[🟢 세대원 가능]**" if row["세대원가능여부"] else "**:orange[🟡 세대주 확인]**"
                 
-            # 1. 맨 윗줄: 공급규모 & 구분 & 세대원자격 & 진행상태
             st.markdown(f"🔢 **공급규모:** **{row['공급세대수']}** &nbsp;|&nbsp; 🏷️ **구분:** `{row['구분']}` &nbsp;|&nbsp; {eligibility} &nbsp;|&nbsp; {status_badge}")
-            
-            # 2. 둘째 줄: 위치
             st.write(f"📍 **위치:** {row['위치']}")
             
             st.divider()
             
-            # 3. 셋째 줄: 청약 접수 일정
             sched_col1, sched_col2, sched_col3, sched_col4 = st.columns(4)
             sched_col1.metric("🎁 특별공급", row["특별공급"])
             sched_col2.metric("🥇 1순위", row["1순위"])
@@ -133,7 +132,6 @@ def render_apt_card(row, is_recommend=False):
                 st.link_button("청약홈 상세 보기", row["링크"], use_container_width=True)
 
 if not df.empty:
-    # 탭 구성: 맞춤추천 / 진행·예정 공고 / 지난 공고 / 전체 데이터 표
     tab_custom, tab_active, tab_closed, tab_table = st.tabs([
         "🎯 맞춤 추천 (남양주 & 세대원)", 
         "🚀 진행 및 예정 공고", 
@@ -157,7 +155,7 @@ if not df.empty:
         else:
             st.warning("현재 남양주시 세대원 가능 공고가 없습니다. 다른 탭을 확인해보세요!")
 
-    # 사이드바 공통 필터 (진행/지난 공고 탭 모두 적용)
+    # 사이드바 공통 필터
     st.sidebar.header("🔍 검색 및 필터")
     search_keyword = st.sidebar.text_input("단지명 또는 지역 검색 (예: 화성, 평택, 수원)")
     types = ["전체"] + list(df["구분"].dropna().unique())
